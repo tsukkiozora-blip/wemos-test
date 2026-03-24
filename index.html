@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NATO IoT Control: Alfa-Bravo-Charlie</title>
+    <title>IoT Control</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/justgage/1.6.1/justgage.min.js"></script>
@@ -31,7 +31,7 @@
             border-top: 8px solid #334155;
         }
         /* Aksen Warna NATO */
-        .card-alfa { border-top-color: #3b82f6; }   /* Biru */
+        .card-alpha { border-top-color: #3b82f6; }   /* Biru */
         .card-bravo { border-top-color: #f59e0b; }  /* Oranye */
         .card-charlie { border-top-color: #8b5cf6; } /* Ungu */
 
@@ -60,11 +60,11 @@
 </head>
 <body>
 
-<div class="card card-alfa">
-    <h3>ALFA</h3>
-    <div id="gauge_alfa" class="gauge-div"></div>
-    <button id="btn_alfa" class="btn-switch btn-off">OFF</button>
-    <div id="status_alfa" class="status-box">Menghubungkan...</div>
+<div class="card card-alpha">
+    <h3>ALPHA</h3>
+    <div id="gauge_alpha" class="gauge-div"></div>
+    <button id="btn_alpha" class="btn-switch btn-off">OFF</button>
+    <div id="status_alpha" class="status-box">Menghubungkan...</div>
 </div>
 
 <div class="card card-bravo">
@@ -140,7 +140,7 @@
         btn.onclick = () => set(ref(db, `test/${lowerName}/button_state`), !currentBtnState);
     }
 
-    createUnit("ALFA");
+    createUnit("ALPHA");
     createUnit("BRAVO");
     createUnit("CHARLIE");
 </script>
