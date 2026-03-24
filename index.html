@@ -3,92 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wemos IoT Dashboard</title>
+    <title>NATO IoT Control: Alfa-Bravo-Charlie</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/justgage/1.6.1/justgage.min.js"></script>
     
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f0f2f5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #0f172a; /* Biru Gelap Profesional */
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+            gap: 25px; 
+            padding: 40px;
             margin: 0;
         }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-            text-align: center;
-            width: 350px;
+        .card { 
+            background: #ffffff; 
+            padding: 25px; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            text-align: center; 
+            width: 310px; 
+            position: relative;
+            overflow: hidden;
+            border-top: 8px solid #334155;
         }
-        #gauge {
-            width: 280px;
-            height: 220px;
-            margin: 0 auto;
-        }
-        
-        /* Style Tombol Switch Bulat */
-        .btn-switch {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            border: 8px solid #eee;
-            color: white;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 10px;
-            outline: none;
-        }
-        .btn-off {
-            background-color: #95a5a6;
-            border-color: #bdc3c7;
-        }
-        .btn-on {
-            background-color: #2ecc71;
-            border-color: #27ae60;
-            box-shadow: 0 0 15px rgba(46, 204, 113, 0.4);
-        }
-        .btn-switch:active {
-            transform: scale(0.92);
-        }
+        /* Aksen Warna NATO */
+        .card-alfa { border-top-color: #3b82f6; }   /* Biru */
+        .card-bravo { border-top-color: #f59e0b; }  /* Oranye */
+        .card-charlie { border-top-color: #8b5cf6; } /* Ungu */
 
-        #status {
-            font-size: 0.8em;
-            margin-top: 25px;
-            padding: 12px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            color: #666;
-            line-height: 1.4;
+        .card h3 { color: #1e293b; margin: 10px 0 15px 0; text-transform: uppercase; letter-spacing: 4px; font-weight: 900; }
+        .gauge-div { width: 280px; height: 200px; margin: 0 auto; }
+        
+        .btn-switch { 
+            width: 85px; height: 85px; border-radius: 50%; border: 6px solid #f1f5f9; 
+            color: white; font-weight: bold; cursor: pointer; transition: 0.3s; 
+            margin-top: 15px; outline: none; font-size: 0.9rem;
+        }
+        .btn-off { background-color: #94a3b8; color: #f8fafc; }
+        .btn-on { 
+            background-color: #10b981; 
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); 
+            border-color: #d1fae5;
+        }
+        .btn-switch:active { transform: scale(0.9); }
+        
+        .status-box { 
+            font-size: 0.8em; margin-top: 20px; padding: 10px; 
+            background: #f8fafc; border-radius: 12px; color: #64748b; 
+            border: 1px solid #e2e8f0; font-weight: 500;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2 style="color: #333; margin-bottom: 5px;">Wemos Monitor</h2>
-    <div id="gauge"></div>
-    
-    <hr style="border: 0; border-top: 1px solid #eee; margin: 25px 0;">
-    
-    <h4 style="margin-bottom: 15px; color: #555;">Control Switch</h4>
-    <button id="mainBtn" class="btn-switch btn-off">OFF</button>
-    
-    <div id="status">Menghubungkan ke Firebase...</div>
+<div class="card card-alfa">
+    <h3>ALFA</h3>
+    <div id="gauge_alfa" class="gauge-div"></div>
+    <button id="btn_alfa" class="btn-switch btn-off">OFF</button>
+    <div id="status_alfa" class="status-box">Menghubungkan...</div>
+</div>
+
+<div class="card card-bravo">
+    <h3>BRAVO</h3>
+    <div id="gauge_bravo" class="gauge-div"></div>
+    <button id="btn_bravo" class="btn-switch btn-off">OFF</button>
+    <div id="status_bravo" class="status-box">Menghubungkan...</div>
+</div>
+
+<div class="card card-charlie">
+    <h3>CHARLIE</h3>
+    <div id="gauge_charlie" class="gauge-div"></div>
+    <button id="btn_charlie" class="btn-switch btn-off">OFF</button>
+    <div id="status_charlie" class="status-box">Menghubungkan...</div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // --- KONFIGURASI FIREBASE ANDA ---
     const firebaseConfig = {
       apiKey: "AIzaSyAqWK1lHjgUFst4QXQ_KRDO5zpTv_1Wq94",
       authDomain: "test-1da07.firebaseapp.com",
@@ -101,69 +97,52 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const mainBtn = document.getElementById("mainBtn");
-    const statusEl = document.getElementById("status");
-    
-    let currentState = false; 
 
-    // 1. Inisialisasi Gauge
-    let myGauge = new JustGage({
-        id: "gauge", value: 0, min: 0, max: 100,
-        title: "Sensor Data", label: "Value",
-        levelColors: ["#3498db", "#f1c40f", "#e74c3c"]
-    });
-
-    // 2. Monitoring Real-time dengan Logika Pengunci Waktu (LocalStorage)
-    onValue(ref(db, 'test/angka_acak'), (snapshot) => {
-        const data = snapshot.val();
+    function createUnit(name) {
+        const lowerName = name.toLowerCase();
         
-        if (data !== null) {
-            myGauge.refresh(data);
-            
-            // Ambil data angka dan jam terakhir yang tersimpan di browser
-            const lastSavedData = localStorage.getItem("last_wemos_val");
-            const lastSavedTime = localStorage.getItem("last_wemos_time");
+        const gauge = new JustGage({
+            id: "gauge_" + lowerName,
+            value: 0, min: 0, max: 100,
+            title: "Node " + name,
+            label: "Data",
+            levelColors: ["#3b82f6", "#f59e0b", "#ef4444"]
+        });
 
-            // Jika angka BERUBAH dari sebelumnya, update jamnya
-            if (data.toString() !== lastSavedData) {
-                const currentTime = new Date().toLocaleTimeString();
-                
-                // Simpan ke memori browser agar saat refresh tidak hilang
-                localStorage.setItem("last_wemos_val", data);
-                localStorage.setItem("last_wemos_time", currentTime);
-                
-                statusEl.innerText = "Monitoring Aktif - " + currentTime;
-            } else {
-                // Jika angka SAMA (saat refresh & Wemos mati), gunakan jam lama
-                statusEl.innerText = "Monitoring Aktif - " + (lastSavedTime || new Date().toLocaleTimeString());
+        const btn = document.getElementById("btn_" + lowerName);
+        const status = document.getElementById("status_" + lowerName);
+        let currentBtnState = false;
+
+        onValue(ref(db, `test/${lowerName}/angka_acak`), (snapshot) => {
+            const val = snapshot.val();
+            if (val !== null) {
+                gauge.refresh(val);
+                const lastVal = localStorage.getItem("v_" + lowerName);
+                const lastTime = localStorage.getItem("t_" + lowerName);
+
+                if (val.toString() !== lastVal) {
+                    const now = new Date().toLocaleTimeString();
+                    localStorage.setItem("v_" + lowerName, val);
+                    localStorage.setItem("t_" + lowerName, now);
+                    status.innerText = "Active: " + now;
+                } else {
+                    status.innerText = "Active: " + (lastTime || "---");
+                }
             }
-            
-            statusEl.style.color = "#27ae60";
-        }
-    });
+        });
 
-    // 3. Sinkronisasi Tombol Switch
-    onValue(ref(db, 'test/button_state'), (snapshot) => {
-        const state = snapshot.val();
-        if (state !== null) {
-            currentState = state;
-            if (state) {
-                mainBtn.innerText = "ON";
-                mainBtn.className = "btn-switch btn-on";
-            } else {
-                mainBtn.innerText = "OFF";
-                mainBtn.className = "btn-switch btn-off";
-            }
-        }
-    });
+        onValue(ref(db, `test/${lowerName}/button_state`), (snapshot) => {
+            currentBtnState = snapshot.val() || false;
+            btn.innerText = currentBtnState ? "ON" : "OFF";
+            btn.className = `btn-switch ${currentBtnState ? 'btn-on' : 'btn-off'}`;
+        });
 
-    // 4. Aksi Klik Tombol (Kirim status ke Firebase)
-    mainBtn.addEventListener('click', () => {
-        const newState = !currentState; 
-        set(ref(db, 'test/button_state'), newState);
-    });
+        btn.onclick = () => set(ref(db, `test/${lowerName}/button_state`), !currentBtnState);
+    }
 
+    createUnit("ALFA");
+    createUnit("BRAVO");
+    createUnit("CHARLIE");
 </script>
-
 </body>
 </html>
