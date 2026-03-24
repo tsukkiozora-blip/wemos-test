@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wemos IoT Dashboard</title>
+    <title>Wemos Control Panel</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/justgage/1.6.1/justgage.min.js"></script>
@@ -11,55 +11,82 @@
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
+            background-color: #f0f2f5;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
         }
         .container {
             background: white;
             padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
             text-align: center;
             width: 350px;
         }
         #gauge {
-            width: 300px;
-            height: 240px;
+            width: 280px;
+            height: 220px;
             margin: 0 auto;
         }
-        #status {
-            font-size: 0.9em;
+        
+        /* Style untuk Tombol Switch */
+        .btn-switch {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             margin-top: 20px;
-            padding: 10px;
-            border-radius: 8px;
-            background: #f9f9f9;
-            color: #555;
-            border: 1px solid #eee;
+            outline: none;
+        }
+        .btn-off {
+            background-color: #95a5a6; /* Abu-abu */
+        }
+        .btn-on {
+            background-color: #2ecc71; /* Hijau */
+            box-shadow: 0 0 20px rgba(46, 204, 113, 0.4);
+        }
+        .btn-switch:active {
+            transform: scale(0.95);
+        }
+
+        #status {
+            font-size: 0.8em;
+            margin-top: 25px;
+            padding: 8px;
+            color: #777;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 style="color: #2c3e50;">Wemos Monitor</h2>
+    <h2 style="color: #333; margin-bottom: 5px;">IoT Dashboard</h2>
     <div id="gauge"></div>
-    <div id="status">Menginisialisasi...</div>
+    
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+    
+    <h4 style="margin-bottom: 15px; color: #555;">Control Switch</h4>
+    <button id="mainBtn" class="btn-switch btn-off">OFF</button>
+    
+    <div id="status">Menghubungkan...</div>
 </div>
 
 <script type="module">
-    // --- IMPORT FIREBASE SDK ---
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // --- DATA KONFIGURASI FIREBASE ANDA ---
     const firebaseConfig = {
       apiKey: "AIzaSyAqWK1lHjgUFst4QXQ_KRDO5zpTv_1Wq94",
       authDomain: "test-1da07.firebaseapp.com",
-      // URL Lengkap dengan asia-southeast1
       databaseURL: "https://test-1da07-default-rtdb.asia-southeast1.firebasedatabase.app/",
       projectId: "test-1da07",
       storageBucket: "test-1da07.firebasestorage.app",
@@ -67,49 +94,63 @@
       appId: "1:1069901232096:web:b7439b0a6402e4fdd35d85"
     };
 
-    // Inisialisasi Firebase
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    const mainBtn = document.getElementById("mainBtn");
     const statusEl = document.getElementById("status");
-
-    // Membuat Gauge setelah library dipastikan terpanggil
-    let myGauge;
     
-    try {
-        myGauge = new JustGage({
-            id: "gauge",
-            value: 0,
-            min: 0,
-            max: 100,
-            title: "Data Sensor",
-            label: "Unit",
-            levelColors: ["#3498db", "#f1c40f", "#e74c3c"] 
-        });
-        statusEl.innerText = "Mencari data di Firebase...";
-    } catch (e) {
-        statusEl.innerText = "Gagal memuat grafik. Coba refresh.";
-        console.error(e);
-    }
+    let currentState = false; // Status awal tombol (false = Off)
 
-    // MENDENGARKAN DATA DARI PATH: test/angka_acak
-    const dataRef = ref(db, 'test/angka_acak');
-    
-    onValue(dataRef, (snapshot) => {
+    // 1. Inisialisasi Gauge
+    let myGauge = new JustGage({
+        id: "gauge", value: 0, min: 0, max: 100,
+        title: "Sensor Realtime", label: "%",
+        levelColors: ["#3498db", "#f1c40f", "#e74c3c"]
+    });
+
+    // 2. Baca Data Sensor (Wemos ke Web)
+    onValue(ref(db, 'test/angka_acak'), (snapshot) => {
         const data = snapshot.val();
-        
         if (data !== null) {
             myGauge.refresh(data);
-            statusEl.innerText = "Online - Update: " + new Date().toLocaleTimeString();
-            statusEl.style.color = "#27ae60";
-            statusEl.style.fontWeight = "bold";
-        } else {
-            statusEl.innerText = "Menunggu data masuk...";
-            statusEl.style.color = "#f39c12";
+            statusEl.innerText = "Monitoring Aktif - " + new Date().toLocaleTimeString();
         }
-    }, (error) => {
-        statusEl.innerText = "Error: " + error.message;
-        statusEl.style.color = "#c0392b";
     });
+
+    // 3. Baca Status Tombol (Sync Web dengan Firebase)
+    // Agar jika dibuka di HP lain, status tombolnya sama
+    onValue(ref(db, 'test/button_state'), (snapshot) => {
+        const state = snapshot.val();
+        if (state !== null) {
+            currentState = state;
+            updateButtonUI(state);
+        }
+    });
+
+    // 4. Fungsi Klik Tombol (Web ke Firebase)
+    mainBtn.addEventListener('click', () => {
+        const newState = !currentState; // Balikkan status (Toggle)
+        
+        // Kirim status baru ke Firebase
+        set(ref(db, 'test/button_state'), newState)
+            .then(() => {
+                console.log("Status berhasil dikirim!");
+            })
+            .catch((error) => {
+                alert("Gagal mengirim data: " + error.message);
+            });
+    });
+
+    // Fungsi untuk mengubah tampilan tombol
+    function updateButtonUI(state) {
+        if (state) {
+            mainBtn.innerText = "ON";
+            mainBtn.className = "btn-switch btn-on";
+        } else {
+            mainBtn.innerText = "OFF";
+            mainBtn.className = "btn-switch btn-off";
+        }
+    }
 
 </script>
 
