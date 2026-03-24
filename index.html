@@ -3,32 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wemos Dashboard</title>
-    <script src="https://cdn.rawgit.com/MikhailTymchuk/docs-chart-justgage/gh-pages/raphael-2.1.4.min.js"></script>
-    <script src="https://cdn.rawgit.com/MikhailTymchuk/docs-chart-justgage/gh-pages/justgage.js"></script>
+    <title>Wemos IoT Dashboard</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/justgage/1.6.1/justgage.min.js"></script>
+    
     <style>
-        body { font-family: sans-serif; background: #f0f0f0; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; width: 320px; }
-        #gauge { width: 250px; height: 200px; margin: auto; }
-        #status { font-size: 0.8rem; margin-top: 1rem; color: #666; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 350px;
+        }
+        #gauge {
+            width: 300px;
+            height: 240px;
+            margin: 0 auto;
+        }
+        #status {
+            font-size: 0.9em;
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 8px;
+            background: #f9f9f9;
+            color: #555;
+            border: 1px solid #eee;
+        }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h3>Wemos Data Monitor</h3>
+<div class="container">
+    <h2 style="color: #2c3e50;">Wemos Monitor</h2>
     <div id="gauge"></div>
-    <div id="status">Mencoba koneksi...</div>
+    <div id="status">Menginisialisasi...</div>
 </div>
 
 <script type="module">
+    // --- IMPORT FIREBASE SDK ---
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // Konfigurasi dari gambar Anda
+    // --- DATA KONFIGURASI FIREBASE ANDA ---
     const firebaseConfig = {
       apiKey: "AIzaSyAqWK1lHjgUFst4QXQ_KRDO5zpTv_1Wq94",
       authDomain: "test-1da07.firebaseapp.com",
+      // URL Lengkap dengan asia-southeast1
       databaseURL: "https://test-1da07-default-rtdb.asia-southeast1.firebasedatabase.app/",
       projectId: "test-1da07",
       storageBucket: "test-1da07.firebasestorage.app",
@@ -36,34 +67,51 @@
       appId: "1:1069901232096:web:b7439b0a6402e4fdd35d85"
     };
 
+    // Inisialisasi Firebase
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const statusEl = document.getElementById("status");
 
-    let gauge = new JustGage({
-        id: "gauge", value: 0, min: 0, max: 100,
-        title: "Level", label: "%", 
-        levelColors: ["#ff0000", "#f9c802", "#a9d70b"]
-    });
+    // Membuat Gauge setelah library dipastikan terpanggil
+    let myGauge;
+    
+    try {
+        myGauge = new JustGage({
+            id: "gauge",
+            value: 0,
+            min: 0,
+            max: 100,
+            title: "Data Sensor",
+            label: "Unit",
+            levelColors: ["#3498db", "#f1c40f", "#e74c3c"] 
+        });
+        statusEl.innerText = "Mencari data di Firebase...";
+    } catch (e) {
+        statusEl.innerText = "Gagal memuat grafik. Coba refresh.";
+        console.error(e);
+    }
 
-    // MENGAMBIL DATA
-    // Pastikan di Firebase, strukturnya adalah test -> angka_acak
+    // MENDENGARKAN DATA DARI PATH: test/angka_acak
     const dataRef = ref(db, 'test/angka_acak');
-
+    
     onValue(dataRef, (snapshot) => {
-        const val = snapshot.val();
-        if (val !== null) {
-            gauge.refresh(val);
-            statusEl.innerText = "Online - Data: " + val;
-            statusEl.style.color = "green";
+        const data = snapshot.val();
+        
+        if (data !== null) {
+            myGauge.refresh(data);
+            statusEl.innerText = "Online - Update: " + new Date().toLocaleTimeString();
+            statusEl.style.color = "#27ae60";
+            statusEl.style.fontWeight = "bold";
         } else {
-            statusEl.innerText = "Data kosong di Firebase (Path salah?)";
+            statusEl.innerText = "Menunggu data masuk...";
+            statusEl.style.color = "#f39c12";
         }
     }, (error) => {
-        console.error(error);
         statusEl.innerText = "Error: " + error.message;
-        statusEl.style.color = "red";
+        statusEl.style.color = "#c0392b";
     });
+
 </script>
+
 </body>
 </html>
