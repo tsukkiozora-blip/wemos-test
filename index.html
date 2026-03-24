@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wemos IoT Dashboard</title>
+    
+    <script src="https://cdn.rawgit.com/MikhailTymchuk/docs-chart-justgage/gh-pages/raphael-2.1.4.min.js"></script>
+    <script src="https://cdn.rawgit.com/MikhailTymchuk/docs-chart-justgage/gh-pages/justgage.js"></script>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        #gauge {
+            width: 300px;
+            height: 240px;
+        }
+        #status {
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Wemos Data Monitor</h2>
+    <div id="gauge"></div>
+    <div id="status">Menghubungkan ke Firebase...</div>
+</div>
+
+<script type="module">
+    // --- IMPORT FIREBASE SDK ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    // --- 1. KONFIGURASI FIREBASE ANDA ---
+    // GANTI dengan konfigurasi dari Firebase Console Anda!
+    const firebaseConfig = {
+        apiKey: "AIzaSyCYRe8AUZ4_zA274UaMFyi5IB8ijKhCsKA",
+        authDomain: "testt-8bac3.firebaseapp.com",
+        databaseURL: "https://testt-8bac3-default-rtdb.firebaseio.com/",
+        projectId: "testt-8bac3",
+        storageBucket: "testt-8bac3.appspot.com",
+        messagingSenderId: "315736751638",
+        appId: "1:315736751638:web:abcdef1234567890" // Pastikan App ID web Anda benar
+    };
+
+    // --- Inisialisasi Firebase ---
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // --- 2. KONFIGURASI GAUGE ---
+    let myGauge = new JustGage({
+        id: "gauge",
+        value: 0,
+        min: 0,
+        max: 100, // Sesuaikan dengan rentang data acak Anda (0-100)
+        title: "Nilai Acak",
+        label: "Unit",
+        levelColors: ["#a9d70b", "#f9c802", "#ff0000"] // Warna gradasi: Hijau-Kuning-Merah
+    });
+
+    const statusEl = document.getElementById("status");
+
+    // --- 3. MENGAMBIL DATA SECARA REAL-TIME ---
+    // Pastikan path database sesuai dengan yang digunakan di Wemos ("/test/angka_acak")
+    const dataRef = ref(db, '/test/angka_acak');
+    onValue(dataRef, (snapshot) => {
+        const data = snapshot.val();
+        
+        if (data !== null) {
+            // Update nilai gauge
+            myGauge.refresh(data);
+            statusEl.innerText = "Data Terbaru Terbaca: " + new Date().toLocaleTimeString();
+            statusEl.style.color = "green";
+        } else {
+            statusEl.innerText = "Data tidak ditemukan di path database.";
+            statusEl.style.color = "orange";
+        }
+    }, (error) => {
+        statusEl.innerText = "Error: " + error.message;
+        statusEl.style.color = "red";
+    });
+
+</script>
+
+</body>
+</html>
