@@ -3,104 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wemos IoT Dashboard</title>
-    
+    <title>Wemos Dashboard</title>
     <script src="https://cdn.rawgit.com/MikhailTymchuk/docs-chart-justgage/gh-pages/raphael-2.1.4.min.js"></script>
     <script src="https://cdn.rawgit.com/MikhailTymchuk/docs-chart-justgage/gh-pages/justgage.js"></script>
-    
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #ececec;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            text-align: center;
-            width: 350px;
-        }
-        #gauge {
-            width: 300px;
-            height: 240px;
-            margin: 0 auto;
-        }
-        #status {
-            font-size: 0.85em;
-            margin-top: 15px;
-            padding: 8px;
-            border-radius: 5px;
-            background: #f9f9f9;
-        }
+        body { font-family: sans-serif; background: #f0f0f0; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; width: 320px; }
+        #gauge { width: 250px; height: 200px; margin: auto; }
+        #status { font-size: 0.8rem; margin-top: 1rem; color: #666; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2 style="color: #333;">Wemos Data Monitor</h2>
+<div class="card">
+    <h3>Wemos Data Monitor</h3>
     <div id="gauge"></div>
-    <div id="status">Menghubungkan ke Firebase...</div>
+    <div id="status">Mencoba koneksi...</div>
 </div>
 
 <script type="module">
-    // --- IMPORT FIREBASE SDK ---
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // --- DATA KONFIGURASI ANDA ---
+    // Konfigurasi dari gambar Anda
     const firebaseConfig = {
       apiKey: "AIzaSyAqWK1lHjgUFst4QXQ_KRDO5zpTv_1Wq94",
       authDomain: "test-1da07.firebaseapp.com",
-      databaseURL: "https://test-1da07-default-rtdb.asia-southeast1.firebasedatabase.app",
+      databaseURL: "https://test-1da07-default-rtdb.asia-southeast1.firebasedatabase.app/",
       projectId: "test-1da07",
       storageBucket: "test-1da07.firebasestorage.app",
       messagingSenderId: "1069901232096",
       appId: "1:1069901232096:web:b7439b0a6402e4fdd35d85"
     };
 
-    // Inisialisasi Firebase
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-
-    // Konfigurasi Gauge
-    let myGauge = new JustGage({
-        id: "gauge",
-        value: 0,
-        min: 0,
-        max: 100,
-        title: "Nilai Sensor",
-        label: "Unit",
-        levelColors: ["#3498db", "#f1c40f", "#e74c3c"] 
-    });
-
     const statusEl = document.getElementById("status");
 
-    // MENGAMBIL DATA DARI PATH: /test/angka_acak
-    const dataRef = ref(db, '/test/angka_acak');
-    
-    onValue(dataRef, (snapshot) => {
-        const data = snapshot.val();
-        
-        if (data !== null) {
-            myGauge.refresh(data);
-            statusEl.innerText = "Terhubung! Update terakhir: " + new Date().toLocaleTimeString();
-            statusEl.style.color = "#27ae60";
-        } else {
-            statusEl.innerText = "Menunggu data dari Wemos...";
-            statusEl.style.color = "#f39c12";
-        }
-    }, (error) => {
-        statusEl.innerText = "Error: " + error.message;
-        statusEl.style.color = "#c0392b";
+    let gauge = new JustGage({
+        id: "gauge", value: 0, min: 0, max: 100,
+        title: "Level", label: "%", 
+        levelColors: ["#ff0000", "#f9c802", "#a9d70b"]
     });
 
-</script>
+    // MENGAMBIL DATA
+    // Pastikan di Firebase, strukturnya adalah test -> angka_acak
+    const dataRef = ref(db, 'test/angka_acak');
 
+    onValue(dataRef, (snapshot) => {
+        const val = snapshot.val();
+        if (val !== null) {
+            gauge.refresh(val);
+            statusEl.innerText = "Online - Data: " + val;
+            statusEl.style.color = "green";
+        } else {
+            statusEl.innerText = "Data kosong di Firebase (Path salah?)";
+        }
+    }, (error) => {
+        console.error(error);
+        statusEl.innerText = "Error: " + error.message;
+        statusEl.style.color = "red";
+    });
+</script>
 </body>
 </html>
