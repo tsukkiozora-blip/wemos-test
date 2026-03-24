@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wemos Control Panel</title>
+    <title>Wemos IoT Dashboard</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/justgage/1.6.1/justgage.min.js"></script>
     
     <style>
         body {
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f0f2f5;
             display: flex;
             justify-content: center;
@@ -47,11 +47,11 @@
             outline: none;
         }
         .btn-off {
-            background-color: #95a5a6; /* Abu-abu */
+            background-color: #95a5a6;
             border-color: #bdc3c7;
         }
         .btn-on {
-            background-color: #2ecc71; /* Hijau */
+            background-color: #2ecc71;
             border-color: #27ae60;
             box-shadow: 0 0 15px rgba(46, 204, 113, 0.4);
         }
@@ -62,17 +62,18 @@
         #status {
             font-size: 0.8em;
             margin-top: 25px;
-            padding: 10px;
+            padding: 12px;
             background: #f8f9fa;
             border-radius: 10px;
             color: #666;
+            line-height: 1.4;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 style="color: #333; margin-bottom: 5px;">Wemos Dashboard</h2>
+    <h2 style="color: #333; margin-bottom: 5px;">Wemos Monitor</h2>
     <div id="gauge"></div>
     
     <hr style="border: 0; border-top: 1px solid #eee; margin: 25px 0;">
@@ -108,22 +109,40 @@
     // 1. Inisialisasi Gauge
     let myGauge = new JustGage({
         id: "gauge", value: 0, min: 0, max: 100,
-        title: "Sensor Data", label: "Unit",
+        title: "Sensor Data", label: "Value",
         levelColors: ["#3498db", "#f1c40f", "#e74c3c"]
     });
 
-    // 2. Monitoring Real-time (Hanya update waktu saat data masuk)
+    // 2. Monitoring Real-time dengan Logika Pengunci Waktu (LocalStorage)
     onValue(ref(db, 'test/angka_acak'), (snapshot) => {
         const data = snapshot.val();
+        
         if (data !== null) {
             myGauge.refresh(data);
-            // TULISAN INI HANYA TERUPDATE SAAT DATA BARU DITERIMA
-            statusEl.innerText = "Monitoring Aktif - " + new Date().toLocaleTimeString();
+            
+            // Ambil data angka dan jam terakhir yang tersimpan di browser
+            const lastSavedData = localStorage.getItem("last_wemos_val");
+            const lastSavedTime = localStorage.getItem("last_wemos_time");
+
+            // Jika angka BERUBAH dari sebelumnya, update jamnya
+            if (data.toString() !== lastSavedData) {
+                const currentTime = new Date().toLocaleTimeString();
+                
+                // Simpan ke memori browser agar saat refresh tidak hilang
+                localStorage.setItem("last_wemos_val", data);
+                localStorage.setItem("last_wemos_time", currentTime);
+                
+                statusEl.innerText = "Monitoring Aktif - " + currentTime;
+            } else {
+                // Jika angka SAMA (saat refresh & Wemos mati), gunakan jam lama
+                statusEl.innerText = "Monitoring Aktif - " + (lastSavedTime || new Date().toLocaleTimeString());
+            }
+            
             statusEl.style.color = "#27ae60";
         }
     });
 
-    // 3. Sinkronisasi Tombol (Mendengarkan status di Firebase)
+    // 3. Sinkronisasi Tombol Switch
     onValue(ref(db, 'test/button_state'), (snapshot) => {
         const state = snapshot.val();
         if (state !== null) {
