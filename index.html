@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT Control</title>
+    <title>IoT Control NATO - Number System</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/justgage/1.6.1/justgage.min.js"></script>
@@ -11,7 +11,7 @@
     <style>
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background-color: #0f172a; /* Biru Gelap Profesional */
+            background-color: #0f172a; 
             display: flex; 
             flex-wrap: wrap; 
             justify-content: center; 
@@ -30,10 +30,9 @@
             overflow: hidden;
             border-top: 8px solid #334155;
         }
-        /* Aksen Warna NATO */
-        .card-alpha { border-top-color: #3b82f6; }   /* Biru */
-        .card-bravo { border-top-color: #f59e0b; }  /* Oranye */
-        .card-charlie { border-top-color: #8b5cf6; } /* Ungu */
+        .card-alpha { border-top-color: #3b82f6; }   
+        .card-bravo { border-top-color: #f59e0b; }  
+        .card-charlie { border-top-color: #8b5cf6; } 
 
         .card h3 { color: #1e293b; margin: 10px 0 15px 0; text-transform: uppercase; letter-spacing: 4px; font-weight: 900; }
         .gauge-div { width: 280px; height: 200px; margin: 0 auto; }
@@ -111,8 +110,11 @@
 
         const btn = document.getElementById("btn_" + lowerName);
         const status = document.getElementById("status_" + lowerName);
-        let currentBtnState = false;
+        
+        // Simpan status dalam bentuk angka (default 0)
+        let currentStatusNumber = 0;
 
+        // Mendengarkan Angka Acak
         onValue(ref(db, `test/${lowerName}/angka_acak`), (snapshot) => {
             const val = snapshot.val();
             if (val !== null) {
@@ -131,13 +133,23 @@
             }
         });
 
-        onValue(ref(db, `test/${lowerName}/button_state`), (snapshot) => {
-            currentBtnState = snapshot.val() || false;
-            btn.innerText = currentBtnState ? "ON" : "OFF";
-            btn.className = `btn-switch ${currentBtnState ? 'btn-on' : 'btn-off'}`;
+        // Mendengarkan Status Perangkat (0 atau 1)
+        onValue(ref(db, `test/${lowerName}/device_status`), (snapshot) => {
+            // Jika data null, default ke 0
+            currentStatusNumber = snapshot.val() === 1 ? 1 : 0;
+            
+            // Update Tampilan Tombol
+            const isCurrentlyOn = (currentStatusNumber === 1);
+            btn.innerText = isCurrentlyOn ? "ON" : "OFF";
+            btn.className = `btn-switch ${isCurrentlyOn ? 'btn-on' : 'btn-off'}`;
         });
 
-        btn.onclick = () => set(ref(db, `test/${lowerName}/button_state`), !currentBtnState);
+        // Event Klik: Mengirim angka ke Firebase
+        btn.onclick = () => {
+            // Jika sekarang 1, kirim 0. Jika sekarang 0, kirim 1.
+            const nextValue = currentStatusNumber === 1 ? 0 : 1;
+            set(ref(db, `test/${lowerName}/device_status`), nextValue);
+        };
     }
 
     createUnit("ALPHA");
