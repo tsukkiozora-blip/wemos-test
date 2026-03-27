@@ -131,7 +131,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // Inisialisasi Grafik
     const ctxData = document.getElementById('dataChart').getContext('2d');
     const dataChart = new Chart(ctxData, {
         type: 'line',
@@ -168,9 +167,15 @@
 
     function createUnit(name, index) {
         const lowerName = name.toLowerCase();
+        
+        // Mengambil data terakhir yang tersimpan di memori browser
+        let savedVal = localStorage.getItem("lastVal_" + lowerName);
+        let savedTime = localStorage.getItem("lastTime_" + lowerName);
+
         const gauge = new JustGage({
             id: "gauge_" + lowerName,
-            value: 0, min: 0, max: 100,
+            value: savedVal || 0, 
+            min: 0, max: 100,
             title: "Value", label: "Temperature",
             levelColors: ["#3b82f6", "#f59e0b", "#ef4444"]
         });
@@ -178,26 +183,33 @@
         const btn = document.getElementById("btn_" + lowerName);
         const statusTxt = document.getElementById("status_" + lowerName);
         
-        let currentStatus = 0;
-        let lastValue = null; // Kunci agar jam tidak update otomatis saat refresh
+        // Tampilkan jam terakhir yang tersimpan saat pertama kali buka
+        if(savedTime) statusTxt.innerText = "Sync: " + savedTime;
 
-        // Mendengarkan data angka
+        let currentStatus = 0;
+
         onValue(ref(db, `test/${lowerName}/angka_acak`), (snapshot) => {
             const val = snapshot.val();
             if (val !== null) {
-                // HANYA Update jam jika nilai benar-benar berubah dari Wemos
-                if (val !== lastValue) {
-                    lastValue = val; 
-                    
-                    gauge.refresh(val);
+                // Konversi ke string untuk perbandingan yang akurat
+                let valStr = val.toString();
+                let storedVal = localStorage.getItem("lastVal_" + lowerName);
+
+                // HANYA update jika nilai di Firebase berbeda dengan yang terakhir disimpan di memori browser
+                if (valStr !== storedVal) {
                     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    
+                    // Simpan nilai baru dan jam baru ke memori browser
+                    localStorage.setItem("lastVal_" + lowerName, valStr);
+                    localStorage.setItem("lastTime_" + lowerName, now);
+
+                    gauge.refresh(val);
                     statusTxt.innerText = "Sync: " + now;
                     updateCharts(now, index, val, dataChart);
                 }
             }
         });
 
-        // Mendengarkan status tombol
         onValue(ref(db, `test/${lowerName}/device_status`), (snapshot) => {
             currentStatus = snapshot.val() === 1 ? 1 : 0;
             btn.innerText = currentStatus === 1 ? "ON" : "OFF";
