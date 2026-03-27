@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT Dashboard - Sensor Monitoring</title>
+    <title>IoT Dashboard Controll & Monitoring</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/justgage/1.6.1/justgage.min.js"></script>
@@ -84,7 +84,7 @@
 </head>
 <body>
 
-    <h2 style="margin-bottom: 30px; letter-spacing: 3px;">REAL-TIME SENSOR MONITOR</h2>
+    <h2 style="margin-bottom: 30px; letter-spacing: 3px;">IoT Dashboard Controll & Monitoring</h2>
 
     <div class="dashboard-grid">
         <div class="card card-alpha">
@@ -110,7 +110,7 @@
     </div>
 
     <div class="chart-section">
-        <h4>Live Data Graph</h4>
+        <h4>Live Temp Graph</h4>
         <canvas id="dataChart"></canvas>
     </div>
 
@@ -171,7 +171,7 @@
         const gauge = new JustGage({
             id: "gauge_" + lowerName,
             value: 0, min: 0, max: 100,
-            title: "Value", label: "Units",
+            title: "Value", label: "Suhu",
             levelColors: ["#3b82f6", "#f59e0b", "#ef4444"]
         });
 
