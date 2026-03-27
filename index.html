@@ -1,172 +1,4 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT Dashboard Controll & Monitoring</title>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/justgage/1.6.1/justgage.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <style>
-        body { 
-            font-family: 'Segoe UI', Roboto, sans-serif; 
-            background-color: #0f172a; 
-            color: white;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .dashboard-grid {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 20px;
-            width: 100%;
-            max-width: 1200px;
-            margin-bottom: 30px;
-        }
-
-        .card { 
-            background: #ffffff; 
-            padding: 20px; 
-            border-radius: 24px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
-            text-align: center; 
-            width: 300px; 
-            border-top: 8px solid #334155;
-        }
-        .card-alpha { border-top-color: #3b82f6; }   
-        .card-bravo { border-top-color: #f59e0b; }  
-        .card-charlie { border-top-color: #8b5cf6; } 
-
-        .card h3 { color: #1e293b; margin: 5px 0 15px 0; letter-spacing: 2px; }
-        .gauge-div { width: 100%; height: 180px; }
-        
-        .btn-switch { 
-            width: 75px; height: 75px; border-radius: 50%; border: 6px solid #f1f5f9; 
-            font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px;
-        }
-        .btn-off { background-color: #94a3b8; color: white; }
-        .btn-on { 
-            background-color: #10b981; 
-            color: white; 
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); 
-            border-color: #d1fae5;
-        }
-
-        .status-box { 
-            font-size: 0.75em; margin-top: 15px; padding: 10px; 
-            background: #f8fafc; border-radius: 12px; color: #64748b; 
-            border: 1px solid #e2e8f0;
-        }
-
-        .chart-section {
-            background: #ffffff;
-            padding: 25px;
-            border-radius: 24px;
-            width: 95%;
-            max-width: 1000px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-        }
-        .chart-section h4 { 
-            color: #1e293b; 
-            margin: 0 0 20px 0; 
-            text-align: center;
-            text-transform: uppercase;
-            font-size: 14px;
-        }
-    </style>
-</head>
-<body>
-
-    <h2 style="margin-bottom: 30px; letter-spacing: 3px;">IoT Dashboard Controll & Monitoring</h2>
-
-    <div class="dashboard-grid">
-        <div class="card card-alpha">
-            <h3>ALPHA</h3>
-            <div id="gauge_alpha" class="gauge-div"></div>
-            <button id="btn_alpha" class="btn-switch btn-off">OFF</button>
-            <div id="status_alpha" class="status-box">Connecting...</div>
-        </div>
-
-        <div class="card card-bravo">
-            <h3>BRAVO</h3>
-            <div id="gauge_bravo" class="gauge-div"></div>
-            <button id="btn_bravo" class="btn-switch btn-off">OFF</button>
-            <div id="status_bravo" class="status-box">Connecting...</div>
-        </div>
-
-        <div class="card card-charlie">
-            <h3>CHARLIE</h3>
-            <div id="gauge_charlie" class="gauge-div"></div>
-            <button id="btn_charlie" class="btn-switch btn-off">OFF</button>
-            <div id="status_charlie" class="status-box">Connecting...</div>
-        </div>
-    </div>
-
-    <div class="chart-section">
-        <h4>Live Temp Graph</h4>
-        <canvas id="dataChart"></canvas>
-    </div>
-
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyAqWK1lHjgUFst4QXQ_KRDO5zpTv_1Wq94",
-      authDomain: "test-1da07.firebaseapp.com",
-      databaseURL: "https://test-1da07-default-rtdb.asia-southeast1.firebasedatabase.app/",
-      projectId: "test-1da07",
-      storageBucket: "test-1da07.firebasestorage.app",
-      messagingSenderId: "1069901232096",
-      appId: "1:1069901232096:web:b7439b0a6402e4fdd35d85"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    // Inisialisasi Grafik Data
-    const ctxData = document.getElementById('dataChart').getContext('2d');
-    const dataChart = new Chart(ctxData, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [
-                { label: 'Alpha', borderColor: '#3b82f6', data: [], tension: 0.4, fill: false, pointRadius: 2 },
-                { label: 'Bravo', borderColor: '#f59e0b', data: [], tension: 0.4, fill: false, pointRadius: 2 },
-                { label: 'Charlie', borderColor: '#8b5cf6', data: [], tension: 0.4, fill: false, pointRadius: 2 }
-            ]
-        },
-        options: { 
-            responsive: true,
-            scales: { 
-                y: { min: 0, max: 100, ticks: { color: '#64748b' } },
-                x: { ticks: { color: '#64748b', maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } }
-            }
-        }
-    });
-
-    function updateCharts(label, unitIndex, value, chartObj) {
-        let labelIndex = chartObj.data.labels.indexOf(label);
-        if (labelIndex === -1) {
-            chartObj.data.labels.push(label);
-            if (chartObj.data.labels.length > 30) {
-                chartObj.data.labels.shift();
-                chartObj.data.datasets.forEach(ds => ds.data.shift());
-            }
-            labelIndex = chartObj.data.labels.length - 1;
-        }
-        chartObj.data.datasets[unitIndex].data[labelIndex] = value;
-        chartObj.update('none'); 
-    }
-
-    function createUnit(name, index) {
+function createUnit(name, index) {
         const lowerName = name.toLowerCase();
         const gauge = new JustGage({
             id: "gauge_" + lowerName,
@@ -178,14 +10,22 @@
         const btn = document.getElementById("btn_" + lowerName);
         const statusTxt = document.getElementById("status_" + lowerName);
         let currentStatus = 0;
+        
+        // Variabel pembantu untuk mencatat nilai terakhir agar tidak update saat refresh
+        let lastValue = null;
 
         onValue(ref(db, `test/${lowerName}/angka_acak`), (snapshot) => {
             const val = snapshot.val();
             if (val !== null) {
-                gauge.refresh(val);
-                const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                statusTxt.innerText = "Sync: " + now;
-                updateCharts(now, index, val, dataChart);
+                // HANYA jalankan update jam jika nilai baru BERBEDA dengan nilai sebelumnya
+                if (val !== lastValue) {
+                    lastValue = val; // Simpan nilai baru sebagai patokan
+                    
+                    gauge.refresh(val);
+                    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    statusTxt.innerText = "Sync: " + now;
+                    updateCharts(now, index, val, dataChart);
+                }
             }
         });
 
@@ -199,11 +39,3 @@
             set(ref(db, `test/${lowerName}/device_status`), currentStatus === 1 ? 0 : 1);
         };
     }
-
-    createUnit("ALPHA", 0);
-    createUnit("BRAVO", 1);
-    createUnit("CHARLIE", 2);
-
-</script>
-</body>
-</html>
