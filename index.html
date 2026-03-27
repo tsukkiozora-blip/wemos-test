@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT Dashboard - Multi Unit</title>
+    <title>IoT Dashboard - Sensor Monitoring</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/justgage/1.6.1/justgage.min.js"></script>
@@ -31,7 +31,6 @@
             margin-bottom: 30px;
         }
 
-        /* Styling Kartu Unit */
         .card { 
             background: #ffffff; 
             padding: 20px; 
@@ -40,9 +39,7 @@
             text-align: center; 
             width: 300px; 
             border-top: 8px solid #334155;
-            transition: transform 0.2s;
         }
-        .card:hover { transform: translateY(-5px); }
         .card-alpha { border-top-color: #3b82f6; }   
         .card-bravo { border-top-color: #f59e0b; }  
         .card-charlie { border-top-color: #8b5cf6; } 
@@ -50,11 +47,9 @@
         .card h3 { color: #1e293b; margin: 5px 0 15px 0; letter-spacing: 2px; }
         .gauge-div { width: 100%; height: 180px; }
         
-        /* Tombol Switch Bulat */
         .btn-switch { 
             width: 75px; height: 75px; border-radius: 50%; border: 6px solid #f1f5f9; 
             font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px;
-            font-size: 14px;
         }
         .btn-off { background-color: #94a3b8; color: white; }
         .btn-on { 
@@ -70,14 +65,12 @@
             border: 1px solid #e2e8f0;
         }
 
-        /* Container Grafik */
         .chart-section {
             background: #ffffff;
             padding: 25px;
             border-radius: 24px;
             width: 95%;
             max-width: 1000px;
-            margin-bottom: 25px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.4);
         }
         .chart-section h4 { 
@@ -86,13 +79,12 @@
             text-align: center;
             text-transform: uppercase;
             font-size: 14px;
-            letter-spacing: 1px;
         }
     </style>
 </head>
 <body>
 
-    <h2 style="margin-bottom: 30px; letter-spacing: 3px;">IOT MULTI-UNIT MONITOR</h2>
+    <h2 style="margin-bottom: 30px; letter-spacing: 3px;">REAL-TIME SENSOR MONITOR</h2>
 
     <div class="dashboard-grid">
         <div class="card card-alpha">
@@ -118,20 +110,14 @@
     </div>
 
     <div class="chart-section">
-        <h4>Live Data Sensor (Alpha, Bravo, Charlie)</h4>
+        <h4>Live Data Graph</h4>
         <canvas id="dataChart"></canvas>
-    </div>
-
-    <div class="chart-section">
-        <h4>Status Switch Monitor</h4>
-        <canvas id="buttonChart"></canvas>
     </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // Konfigurasi Firebase Anda
     const firebaseConfig = {
       apiKey: "AIzaSyAqWK1lHjgUFst4QXQ_KRDO5zpTv_1Wq94",
       authDomain: "test-1da07.firebaseapp.com",
@@ -145,7 +131,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // 1. Inisialisasi Grafik Data (Suhu/Angka)
+    // Inisialisasi Grafik Data
     const ctxData = document.getElementById('dataChart').getContext('2d');
     const dataChart = new Chart(ctxData, {
         type: 'line',
@@ -159,105 +145,61 @@
         },
         options: { 
             responsive: true,
-            scales: { y: { min: 0, max: 100, ticks: { color: '#64748b' } }, x: { ticks: { display: false } } }
-        }
-    });
-
-    // 2. Inisialisasi Grafik Tombol (Status ON/OFF Linear)
-    const ctxBtn = document.getElementById('buttonChart').getContext('2d');
-    const buttonChart = new Chart(ctxBtn, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [
-                { label: 'Alpha', borderColor: '#3b82f6', data: [], tension: 0.2, fill: false },
-                { label: 'Bravo', borderColor: '#f59e0b', data: [], tension: 0.2, fill: false },
-                { label: 'Charlie', borderColor: '#8b5cf6', data: [], tension: 0.2, fill: false }
-            ]
-        },
-        options: { 
-            responsive: true,
             scales: { 
-                y: { 
-                    min: -0.1, max: 1.1, 
-                    ticks: { 
-                        stepSize: 1, 
-                        color: '#64748b',
-                        callback: function(value) { return value === 1 ? 'ON' : 'OFF'; } 
-                    } 
-                },
-                x: { ticks: { display: false } }
+                y: { min: 0, max: 100, ticks: { color: '#64748b' } },
+                x: { ticks: { color: '#64748b', maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } }
             }
         }
     });
 
-    // Fungsi Global untuk Update Grafik (Sinkron antar unit)
     function updateCharts(label, unitIndex, value, chartObj) {
         let labelIndex = chartObj.data.labels.indexOf(label);
-        
-        // Jika waktu belum ada di label, tambahkan baru
         if (labelIndex === -1) {
             chartObj.data.labels.push(label);
-            
-            // Batasi 25 data agar tidak lag
-            if (chartObj.data.labels.length > 25) {
+            if (chartObj.data.labels.length > 30) {
                 chartObj.data.labels.shift();
                 chartObj.data.datasets.forEach(ds => ds.data.shift());
             }
             labelIndex = chartObj.data.labels.length - 1;
         }
-
-        // Masukkan data ke dataset unit yang bersangkutan
         chartObj.data.datasets[unitIndex].data[labelIndex] = value;
         chartObj.update('none'); 
     }
 
-    // Fungsi pembuat Unit (Alpha, Bravo, Charlie)
     function createUnit(name, index) {
         const lowerName = name.toLowerCase();
-        
-        // Init Gauge
         const gauge = new JustGage({
             id: "gauge_" + lowerName,
             value: 0, min: 0, max: 100,
             title: "Value", label: "Units",
-            levelColors: ["#3b82f6", "#f59e0b", "#ef4444"],
-            gaugeColor: "#f1f5f9", titleFontColor: "#64748b"
+            levelColors: ["#3b82f6", "#f59e0b", "#ef4444"]
         });
 
         const btn = document.getElementById("btn_" + lowerName);
         const statusTxt = document.getElementById("status_" + lowerName);
         let currentStatus = 0;
 
-        // Mendengarkan Angka Acak dari Wemos
         onValue(ref(db, `test/${lowerName}/angka_acak`), (snapshot) => {
             const val = snapshot.val();
             if (val !== null) {
                 gauge.refresh(val);
-                const now = new Date().toLocaleTimeString();
-                statusTxt.innerText = "Last Sync: " + now;
+                const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                statusTxt.innerText = "Sync: " + now;
                 updateCharts(now, index, val, dataChart);
             }
         });
 
-        // Mendengarkan Status Tombol (Update UI & Grafik)
         onValue(ref(db, `test/${lowerName}/device_status`), (snapshot) => {
             currentStatus = snapshot.val() === 1 ? 1 : 0;
             btn.innerText = currentStatus === 1 ? "ON" : "OFF";
             btn.className = `btn-switch ${currentStatus === 1 ? 'btn-on' : 'btn-off'}`;
-            
-            const now = new Date().toLocaleTimeString();
-            updateCharts(now, index, currentStatus, buttonChart);
         });
 
-        // Aksi Klik Tombol
         btn.onclick = () => {
-            const nextVal = currentStatus === 1 ? 0 : 1;
-            set(ref(db, `test/${lowerName}/device_status`), nextVal);
+            set(ref(db, `test/${lowerName}/device_status`), currentStatus === 1 ? 0 : 1);
         };
     }
 
-    // Jalankan Unit
     createUnit("ALPHA", 0);
     createUnit("BRAVO", 1);
     createUnit("CHARLIE", 2);
