@@ -168,7 +168,6 @@
     function createUnit(name, index) {
         const lowerName = name.toLowerCase();
         
-        // Mengambil data terakhir yang tersimpan di memori browser
         let savedVal = localStorage.getItem("lastVal_" + lowerName);
         let savedTime = localStorage.getItem("lastTime_" + lowerName);
 
@@ -176,6 +175,8 @@
             id: "gauge_" + lowerName,
             value: savedVal || 0, 
             min: 0, max: 100,
+            decimals: 1, // <--- TAMBAHKAN INI: Menampilkan 1 angka di belakang koma
+            formatNumber: true, // Memastikan format angka didukung
             title: "Value", label: "Temperature",
             levelColors: ["#3b82f6", "#f59e0b", "#ef4444"]
         });
@@ -183,7 +184,6 @@
         const btn = document.getElementById("btn_" + lowerName);
         const statusTxt = document.getElementById("status_" + lowerName);
         
-        // Tampilkan jam terakhir yang tersimpan saat pertama kali buka
         if(savedTime) statusTxt.innerText = "Sync: " + savedTime;
 
         let currentStatus = 0;
@@ -191,21 +191,20 @@
         onValue(ref(db, `test/${lowerName}/angka_acak`), (snapshot) => {
             const val = snapshot.val();
             if (val !== null) {
-                // Konversi ke string untuk perbandingan yang akurat
-                let valStr = val.toString();
-                let storedVal = localStorage.getItem("lastVal_" + lowerName);
+                // Pastikan data diperlakukan sebagai angka desimal
+                let currentVal = parseFloat(val); 
+                let storedVal = parseFloat(localStorage.getItem("lastVal_" + lowerName));
 
-                // HANYA update jika nilai di Firebase berbeda dengan yang terakhir disimpan di memori browser
-                if (valStr !== storedVal) {
+                // Bandingkan angka desimal (presisi tetap terjaga)
+                if (currentVal !== storedVal) {
                     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                     
-                    // Simpan nilai baru dan jam baru ke memori browser
-                    localStorage.setItem("lastVal_" + lowerName, valStr);
+                    localStorage.setItem("lastVal_" + lowerName, currentVal);
                     localStorage.setItem("lastTime_" + lowerName, now);
 
-                    gauge.refresh(val);
+                    gauge.refresh(currentVal);
                     statusTxt.innerText = "Sync: " + now;
-                    updateCharts(now, index, val, dataChart);
+                    updateCharts(now, index, currentVal, dataChart);
                 }
             }
         });
